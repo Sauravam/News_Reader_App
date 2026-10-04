@@ -1,0 +1,25 @@
+{
+  "count": 2,
+  "next": "https://api.spaceflightnewsapi.net/v4/articles/?limit=2&offset=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 101,
+      "title": "NASA Launches Artemis Mission to the Moon",
+      "url": "https://example.com/artemis",
+      "image_url": "https://example.com/artemis.jpg",
+      "news_site": "NASA",
+      "summary": "NASA has successfully launched the Artemis rocket.",
+      "published_at": "2026-10-03T10:00:00Z"
+    },
+    {
+      "id": 102,
+      "title": "SpaceX Starship Completes Orbital Flight",
+      "url": "https://example.com/starship",
+      "image_url": "https://example.com/starship.jpg",
+      "news_site": "SpaceX",
+      "summary": "Starship achieved full orbital trajectory.",
+      "published_at": "2026-10-02T14:30:00Z"
+    }
+  ]
+}
