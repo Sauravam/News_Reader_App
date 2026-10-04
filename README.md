@@ -1,6 +1,6 @@
 # 📰 News Reader — News Coverage App
 
-> A production-quality Flutter news reader app. Built with **MVVM + Clean Architecture**, Material 3 design, offline bookmarks, and complete loading / empty / error state handling.
+> News Reader is a Flutter app that brings the latest spaceflight news to your phone. You can sign in, scroll an endless feed of articles, search by title or keyword, and bookmark stories to read offline. It supports light and dark themes and works on phones and tablets. Under the hood it uses MVVM with Clean Architecture, Provider for state management, Dio for networking, Hive for local storage, and GoRouter for navigation. Every screen handles loading, empty, error and offline states, and 53 automated tests cover the logic.
 
 ![Flutter](https://img.shields.io/badge/Flutter-Stable-02569B?logo=flutter&logoColor=white)
 ![Material 3](https://img.shields.io/badge/Design-Material%203-4A38D9)
