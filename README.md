@@ -1,6 +1,39 @@
-# 🚀 News Reader — Spaceflight News Reader
+# 📰 News Reader — News Coverage App
 
-> A production-quality Flutter news reader application powered by the [Spaceflight News API](https://api.spaceflightnewsapi.net/v4). Built with **MVVM + Clean Architecture**, Material 3 design, full offline support, and exhaustive state handling.
+> A production-quality Flutter news reader app. Built with **MVVM + Clean Architecture**, Material 3 design, offline bookmarks, and complete loading / empty / error state handling.
+
+![Flutter](https://img.shields.io/badge/Flutter-Stable-02569B?logo=flutter&logoColor=white)
+![Material 3](https://img.shields.io/badge/Design-Material%203-4A38D9)
+![Architecture](https://img.shields.io/badge/Architecture-MVVM%20%2B%20Clean-D71D89)
+![Platform](https://img.shields.io/badge/Platform-Android-F48031)
+
+---
+
+
+
+## ✨ Features
+
+- **Mock authentication** — email and password validation, a "Keep me signed in" option that restores the session after a restart, and logout.
+- **News feed** — article cards with thumbnail, title, source, published date and short description. Infinite scrolling, pull-to-refresh and shimmer skeleton loading.
+- **Live search** — debounced search by title or keyword with a clear button; results update as you type and stale responses are cancelled.
+- **Bookmarks** — add and remove bookmarks, stored locally and readable offline. Swipe to remove with an undo option.
+- **Theme** — Light, Dark and System modes, persisted across launches.
+- **Article detail** — Hero image transition, collapsing app bar, and a button to open the full article in the browser.
+- **Resilient by design** — typed errors with retry, an offline banner, and an empty state on every screen.
+- **Responsive** — navigation adapts between a bottom bar and a side rail, and the article list becomes a grid on wider screens.
+
+---
+
+## 🔑 Demo Login
+
+The authentication is mocked, so there is no backend or sign-up. Use:
+
+| Field | Value |
+|---|---|
+| Email | `user@example.com` |
+| Password | `password` |
+
+Tick **Keep me signed in** to stay logged in after closing the app.
 
 ---
 
@@ -17,10 +50,10 @@
 A pre-built release APK is available at the root of this repository:
 
 ```
-newspulse-release.apk   (54.9 MB, Release build)
+news-reader-release.apk   (54.9 MB, Release build)
 ```
 
-> **Install:** Transfer `newspulse-release.apk` to your Android device and open it. You may need to enable *"Install from unknown sources"* in device settings.
+> **Install:** Transfer `news-reader-release.apk` to your Android device and open it. You may need to enable *"Install from unknown sources"* in your device settings.
 
 ---
 
@@ -38,7 +71,7 @@ newspulse-release.apk   (54.9 MB, Release build)
 
 ```bash
 git clone <repo-url>
-cd ImmverseAI
+cd <repo-folder>
 ```
 
 ### 2 — Install Dependencies
@@ -47,9 +80,9 @@ cd ImmverseAI
 flutter pub get
 ```
 
-### 3 — Run Code Generation (Freezed / JSON)
+### 3 — Run Code Generation (Freezed / JSON) — optional
 
-Generated files (`*.freezed.dart`, `*.g.dart`) are already committed. To regenerate after modifying annotated models:
+Generated files (`*.freezed.dart`, `*.g.dart`) are already committed, so the app runs without this step. Regenerate only after modifying annotated models:
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
@@ -65,13 +98,41 @@ flutter run
 flutter run --release
 ```
 
+No API keys, `.env` files or backend setup are needed.
+
 ### 5 — Run Tests
 
 ```bash
 flutter test
 ```
 
-All **53 tests** (unit + widget + integration) pass with zero static-analysis issues.
+All **53 tests** (unit + widget + integration) pass with zero static-analysis issues (`flutter analyze`).
+
+---
+
+## ✅ Requirements Coverage
+
+### Functional requirements
+
+| Requirement | Implementation |
+|---|---|
+| **Authentication** — email and password validation, remember session, logout | `LoginScreen` with inline validation, `MockAuthRepository` persisting the session in Hive ("Keep me signed in"), logout from Settings, `GoRouter` redirect guard |
+| **Home** — thumbnail, title, source, date, description | `ArticleCard` shown in a sliver list (grid on wide screens) |
+| **Home** — infinite scroll, pull-to-refresh, loading, empty, error | Offset-based pagination (10 per page), `RefreshIndicator`, shimmer skeletons, empty state, `ErrorView` with retry, footer spinner / retry row |
+| **Search** — title, keywords, clear, dynamic results | `NewsSearchBar` with debounce, server-side `search` parameter, clear button, `CancelToken` to drop stale requests |
+| **Bookmark** — add, remove, offline, persistent | Hive-backed `BookmarkRepository`, optimistic toggle, Bookmarks tab reads local storage only |
+| **Theme** — light, dark, persisted | `ThemeViewModel` saving `ThemeMode` to Hive, applied before the first frame |
+
+### Technical requirements
+
+| Required | Used |
+|---|---|
+| Riverpod or Provider | **Provider** (`ChangeNotifier` ViewModels + `context.select`) |
+| Dio / HTTP | **Dio** |
+| Hive or Sqflite | **Hive CE** |
+| GoRouter | **go_router** |
+| Freezed | **freezed** (state objects, entities, models) |
+| Json Serializable | **json_serializable** |
 
 ---
 
@@ -186,19 +247,53 @@ The app follows **Clean Architecture** with **MVVM** as the presentation pattern
 └──────────────────────────────────────────────────┘
 ```
 
+**Data flow:** a user action in a Screen calls a ViewModel method → the ViewModel calls a repository interface → the repository implementation fetches from Dio or Hive and returns a `Result<T>` → the ViewModel emits a new immutable state → only the widgets that depend on it rebuild.
+
+**Relation to MVC:** MVVM belongs to the same family as MVC. The Screens are the *View*, the Domain and Data layers are the *Model*, and the `ChangeNotifier` ViewModels play the *Controller* role while also exposing observable state to the View.
+
 ### Key Design Decisions
 
 | Decision | Rationale |
 |---|---|
-| **`sealed class Result<T>`** | Exhaustive, compile-time safe success/error propagation — no uncaught exceptions reach the UI |
+| **`sealed class Result<T>`** | Exhaustive, compile-time safe success/error propagation, so no uncaught exceptions reach the UI |
 | **Freezed state objects** | Immutable state prevents accidental mutation; `copyWith` is concise and safe |
-| **Provider + ChangeNotifier** | Proportionate complexity for a 4-feature app; avoids Riverpod/BLoC boilerplate |
-| **`context.select`** | Granular rebuilds — `ArticleCard` only rebuilds when its own bookmark status changes |
+| **Provider + ChangeNotifier** | Proportionate complexity for a 4-feature app; simple to test and avoids Riverpod/BLoC boilerplate |
+| **`context.select`** | Granular rebuilds, so `ArticleCard` only rebuilds when its own bookmark status changes |
 | **CancelToken on every request** | Prevents stale responses when the user types quickly or navigates away |
-| **In-memory default page cache** | Restores the feed instantly on search clear — no network round-trip |
-| **Optimistic bookmark updates** | UI reflects toggle in < 1 frame; Hive write happens asynchronously |
-| **`AppResponsive.crossAxisCount`** | Single source of truth for phone/tablet/desktop breakpoints |
+| **In-memory default page cache** | Restores the feed instantly on search clear with no network round-trip |
+| **Optimistic bookmark updates** | The UI reflects the toggle in under one frame; the Hive write happens asynchronously |
+| **Abstract `AuthRepository`** | The mock can be swapped for Firebase Authentication without touching the UI |
+| **`AppResponsive.crossAxisCount`** | Single source of truth for phone / tablet / desktop breakpoints |
 
+---
+
+## 🌐 API
+
+Data comes from the free, key-less **Spaceflight News API v4** (SNAPI).
+
+| Item | Value |
+|---|---|
+| Base URL | `https://api.spaceflightnewsapi.net/v4` |
+| Endpoint | `GET /articles/` |
+| Parameters used | `limit` (page size), `offset` (pagination), `search` (title / summary), `ordering=-published_at` (newest first) |
+
+Example request:
+
+```
+GET https://api.spaceflightnewsapi.net/v4/articles/?limit=10&offset=0&search=SpaceX&ordering=-published_at
+```
+
+| App field | API field |
+|---|---|
+| Thumbnail | `image_url` |
+| Title | `title` |
+| Source | `news_site` |
+| Published date | `published_at` |
+| Short description | `summary` |
+| Article link | `url` |
+
+ 
+> Could not uses any other API as they all required keys and some limit the items per page which affect it's requirement for the  assignment.
 ---
 
 ## 📚 Packages Used
@@ -233,6 +328,20 @@ The app follows **Clean Architecture** with **MVVM** as the presentation pattern
 
 ---
 
+## 🎨 Design System
+
+Material 3 with the brand palette and the Inter typeface. All colors and spacing live in `core/theme/app_colors.dart`.
+
+| Role | Color | Used for |
+|---|---|---|
+| Primary | `#4A38D9` (purple) | Buttons, selected navigation, links |
+| Accent | `#D71D89` (pink) | Bookmarked state, active highlights |
+| Tertiary | `#F48031` (orange) | Source chips, offline banner |
+
+Dark mode uses lighter tints of the same hues to keep text contrast readable.
+
+---
+
 ## ✅ State Handling — All Screens
 
 | Screen | Loading | Empty | Error | Paginating | Offline |
@@ -241,6 +350,37 @@ The app follows **Clean Architecture** with **MVVM** as the presentation pattern
 | **Article Detail** | `CircularProgressIndicator` | — | `ErrorView` + retry | — | — |
 | **Bookmarks** | — | Bookmark icon + message | — | — | `OfflineBanner` |
 | **Login** | Button loading indicator | — | Inline error text | — | — |
+
+---
+
+## 🚨 Error Handling
+
+Every network failure is mapped to a typed `Failure` in `dio_error_mapper.dart`, so the UI never handles raw exceptions.
+
+| Scenario | How it is handled |
+|---|---|
+| **No internet** | Mapped to a `noInternet` failure. The feed shows `ErrorView` with a retry button, the `OfflineBanner` appears, and the Bookmarks tab keeps working from local storage |
+| **API timeout** | Mapped to a `timeout` failure with a clear message and retry. If it happens while loading more, an inline retry row appears and the articles already loaded stay on screen |
+| **Invalid response** | Malformed or unexpected data is caught and mapped to an `invalidResponse` failure instead of crashing |
+| **Server error** | Non-success status codes are mapped to a `server` failure carrying the status code |
+| **Empty results** | A dedicated empty state; for searches it shows the query with a **Clear search** button |
+
+---
+
+## 🧪 Testing
+
+```bash
+flutter test            # run all 53 tests
+flutter test --coverage # optionally generate coverage/lcov.info
+```
+
+| Type | What it covers |
+|---|---|
+| **Unit** (9 files) | ViewModels (pagination, search debounce, stale-response handling), repositories, Dio error mapper, date formatter and more |
+| **Widget** | `ArticleCard`, `LoginScreen` validation, `ErrorView` |
+| **Integration** | Full flow: Login → Feed → Bookmark → Bookmarks tab (`test/integration/app_flow_test.dart`) |
+
+Tests use `mocktail` for mocks and `fake_async` for time-based logic. No test touches the real network.
 
 ---
 
@@ -262,6 +402,7 @@ The app follows **Clean Architecture** with **MVVM** as the presentation pattern
 
 ---
 
+
 ## 🔧 Building from Source
 
 ```bash
@@ -277,8 +418,6 @@ flutter build appbundle --release
 
 Output: `build/app/outputs/flutter-apk/app-release.apk`
 
+> The release APK is signed with the default debug key, which is sufficient for this assessment. A production release would use a dedicated keystore.
+
 ---
-
-## 📄 License
-
-This project was created as a take-home engineering assessment. All rights reserved.
